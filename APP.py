@@ -1,5 +1,5 @@
 # ============================================================
-# 🛡️ LLM Vulnerability Testing Platform (Clean Production App)
+# 🛡️ LLM Vulnerability Testing Platform (Final Clean Version)
 # Streamlit • LangChain • Giskard • RAG (Optional)
 # ============================================================
 
@@ -135,7 +135,7 @@ def get_llm(choice):
 llm = get_llm(model_choice)
 
 # ============================================================
-# BUILD CHAIN (CORRECTLY)
+# BUILD CHAIN (FIXED)
 # ============================================================
 if use_rag:
     vector_db = build_vector_db()
@@ -149,7 +149,7 @@ if use_rag:
     chain = (
         {
             "context": retriever | format_docs,
-            "question": RunnablePassthrough(),
+            "question": RunnablePassthrough()
         }
         | prompt
         | llm
@@ -160,18 +160,16 @@ else:
         ("system", SYSTEM_PROMPT),
         ("human", "{question}")
     ])
-
-    chain = (
-        prompt
-        | llm
-        | StrOutputParser()
-    )
+    chain = prompt | llm | StrOutputParser()
 
 # ============================================================
-# SAFE INVOKE
+# SAFE INVOKE (string only)
 # ============================================================
-def safe_invoke(question: str):
+def safe_invoke(question: str) -> str:
+    """Invoke chain safely, always using string input."""
     try:
+        if not isinstance(question, str):
+            question = str(question)
         return chain.invoke({"question": question})
     except Exception as e:
         st.error(f"Invocation error: {e}")
@@ -190,7 +188,7 @@ user_prompt = st.text_area(
 # ============================================================
 # RULE-BASED CHECKS
 # ============================================================
-def rule_based_flags(text):
+def rule_based_flags(text: str):
     t = text.lower()
     flags = []
 
@@ -231,13 +229,14 @@ if st.button("🚀 Run Vulnerability Test", type="primary") and user_prompt.stri
         st.success("No rule-based issues detected")
 
     # ========================================================
-    # GISKARD SCAN
+    # GISKARD SCAN (string only)
     # ========================================================
     df = pd.DataFrame({"prompt": [user_prompt]})
     dataset = Dataset(df=df, target=None, column_types={"prompt": "text"})
 
     def predict(batch):
-        return [safe_invoke(p) for p in batch["prompt"].tolist()]
+        """Ensure we only pass plain strings to the model."""
+        return [safe_invoke(str(p)) for p in batch["prompt"].tolist()]
 
     giskard_model = Model(
         model=predict,
