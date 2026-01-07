@@ -1,0 +1,11 @@
+streamlit>=1.31
+langchain>=0.2.0
+langchain-community
+langchain-openai
+langchain-groq
+giskard>=2.0
+faiss-cpu
+sentence-transformers
+pandas
+openai
+reportlab
